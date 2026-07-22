@@ -1,0 +1,85 @@
+name: Build release artifacts
+
+on:
+  release:
+    types: [published, edited]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - run: make validate
+
+  build:
+    needs: validate
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: darwin
+            goarch: arm64
+            archive: tar.gz
+          - goos: darwin
+            goarch: amd64
+            archive: tar.gz
+          - goos: linux
+            goarch: arm64
+            archive: tar.gz
+          - goos: linux
+            goarch: amd64
+            archive: tar.gz
+          - goos: windows
+            goarch: amd64
+            archive: zip
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: Build archive
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+          ARCHIVE: ${{ matrix.archive }}
+        run: |
+          name="chromecarve-${GOOS}-${GOARCH}"
+          executable="chromecarve"
+          if [ "${GOOS}" = "windows" ]; then executable="chromecarve.exe"; fi
+          mkdir -p "dist/${name}"
+          go build -trimpath -o "dist/${name}/${executable}" ./cmd/chromecarve
+          cp README.md LICENSE "dist/${name}/"
+          if [ "${ARCHIVE}" = "zip" ]; then
+            (cd dist && zip -r "${name}.zip" "${name}")
+          else
+            tar -C dist -czf "dist/${name}.tar.gz" "${name}"
+          fi
+      - uses: actions/upload-artifact@v5
+        with:
+          name: chromecarve-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/*.${{ matrix.archive }}
+          if-no-files-found: error
+
+  attach:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: chromecarve-*
+          path: dist
+          merge-multiple: true
+      - name: Attach archives to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" dist/* --clobber

@@ -1,0 +1,21 @@
+# Recovery workflow
+
+1. Quit Chrome or copy the cache data before scanning.
+2. Protect the working directory; browser data can reveal private URLs and identity data.
+3. Scan likely roots with a narrow time window as a ranking hint.
+4. Review the JSONL candidate paths and signals.
+5. Use the structured extraction command after Phase 3 and Phase 4 are available.
+
+```bash
+chromecarve scan \
+  --root "$HOME" \
+  --root /private/var/folders \
+  --after 2026-07-20T00:00:00-07:00 \
+  --before 2026-07-23T00:00:00-07:00 \
+  --output findings.jsonl
+```
+
+Full Disk Access restrictions may prevent inspection of relevant directories.
+The scanner reports and continues past those paths. For APFS/Time Machine data,
+list local snapshots with `tmutil listlocalsnapshots /`, mount or expose the
+desired snapshot through supported macOS tooling, then scan that read-only root.

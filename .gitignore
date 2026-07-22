@@ -1,0 +1,19 @@
+# Go build and test output
+/bin/
+/build/
+/dist/
+*.test
+*.out
+coverage.txt
+coverage.html
+
+# Local scan and recovery output (may contain private browser data)
+findings.jsonl
+/recovered/
+/carved/
+
+# Editors and macOS
+.DS_Store
+.idea/
+.vscode/
+*.swp

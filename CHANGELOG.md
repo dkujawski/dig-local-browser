@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Allow `chromecarve inspect` to inspect candidate paths directly from scan
+  JSONL output files.
 - Add configurable status and progress feedback for long-running scans.
 - Add safe Chromium Simple Cache version-5 parsing, HTTP response metadata
   decoding, integrity checks, body stream boundaries, and `chromecarve inspect`.

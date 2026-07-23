@@ -15,8 +15,7 @@ chromecarve scan \
   --before 2026-07-23T00:00:00-07:00 \
   --output findings.jsonl
 
-chromecarve inspect \
-  "/path/from/findings/0123456789abcdef_0"
+chromecarve inspect --input findings.jsonl
 ```
 
 Full Disk Access restrictions may prevent inspection of relevant directories.

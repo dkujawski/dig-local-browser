@@ -44,9 +44,17 @@ frequency or `--progress-interval 0` to disable periodic updates.
   "/path/to/Cache/Cache_Data/0123456789abcdef_0"
 ```
 
+Inspect every candidate path from a scan output file:
+
+```bash
+./build/chromecarve inspect --input findings.jsonl
+```
+
 Inspection reports the cache version and key, URL, checked stream offsets and
 lengths, HTTP response headers, MIME type, content encoding, body SHA-256, CRC
-status, and non-fatal parsing warnings. Source files remain read-only.
+status, and non-fatal parsing warnings. JSONL batch inspection continues after
+malformed records or candidate-specific errors and returns a partial-success
+status when any record could not be inspected. Source files remain read-only.
 
 ## Limitations
 

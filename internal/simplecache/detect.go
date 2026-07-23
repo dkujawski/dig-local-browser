@@ -1,4 +1,4 @@
-// Package simplecache detects and, in later milestones, parses Chromium Simple Cache entries.
+// Package simplecache detects and parses Chromium Simple Cache entries.
 package simplecache
 
 import (

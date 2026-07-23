@@ -4,7 +4,8 @@
 2. Protect the working directory; browser data can reveal private URLs and identity data.
 3. Scan likely roots with a narrow time window as a ranking hint.
 4. Review the JSONL candidate paths and signals.
-5. Use the structured extraction command after Phase 3 and Phase 4 are available.
+5. Inspect high-confidence entries before extraction.
+6. Use the structured extraction command after Phase 4 is available.
 
 ```bash
 chromecarve scan \
@@ -13,6 +14,9 @@ chromecarve scan \
   --after 2026-07-20T00:00:00-07:00 \
   --before 2026-07-23T00:00:00-07:00 \
   --output findings.jsonl
+
+chromecarve inspect \
+  "/path/from/findings/0123456789abcdef_0"
 ```
 
 Full Disk Access restrictions may prevent inspection of relevant directories.

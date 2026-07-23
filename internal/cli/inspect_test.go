@@ -126,7 +126,7 @@ func writeCandidateJSONL(t *testing.T, candidates ...manifest.Candidate) string 
 }
 
 func TestCommandHelpExitsSuccessfully(t *testing.T) {
-	for _, command := range []string{"scan", "inspect"} {
+	for _, command := range []string{"scan", "inspect", "extract"} {
 		var stdout, stderr bytes.Buffer
 		if exit := Run(context.Background(), []string{command, "--help"}, &stdout, &stderr); exit != ExitSuccess {
 			t.Errorf("%s --help exit = %d, want %d", command, exit, ExitSuccess)

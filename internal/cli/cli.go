@@ -60,10 +60,12 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		return runScan(ctx, args[1:], stderr)
 	case "inspect":
 		return runInspect(args[1:], stdout, stderr)
+	case "extract":
+		return runExtract(args[1:], stdout, stderr)
 	case "help", "-h", "--help":
 		usage(stdout)
 		return ExitSuccess
-	case "extract", "carve", "report", "snapshots":
+	case "carve", "report", "snapshots":
 		fmt.Fprintf(stderr, "chromecarve %s is not implemented in this milestone; run 'chromecarve scan --help' or see docs/SPEC.md\n", args[0])
 		return ExitUsage
 	default:
@@ -204,5 +206,5 @@ func chromeRunning() bool {
 
 func usage(w io.Writer) {
 	fmt.Fprintln(w, "Usage: chromecarve <command> [options]")
-	fmt.Fprintln(w, "Commands: scan, inspect (available); extract, carve, report, snapshots (planned)")
+	fmt.Fprintln(w, "Commands: scan, inspect, extract (available); carve, report, snapshots (planned)")
 }

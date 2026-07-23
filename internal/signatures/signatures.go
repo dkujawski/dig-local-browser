@@ -23,6 +23,33 @@ type Match struct {
 	Offset int64 `json:"offset"`
 }
 
+// Detect identifies an image container beginning at data[0]. totalSize is the
+// complete payload length, allowing bounded header reads for length-bearing
+// formats such as WebP.
+func Detect(data []byte, totalSize int64) (Type, bool) {
+	switch {
+	case len(data) >= 3 && bytes.Equal(data[:3], []byte{0xff, 0xd8, 0xff}):
+		return JPEG, true
+	case len(data) >= 8 && bytes.Equal(data[:8], []byte{0x89, 'P', 'N', 'G', 0x0d, 0x0a, 0x1a, 0x0a}):
+		return PNG, true
+	case len(data) >= 6 && (string(data[:6]) == "GIF87a" || string(data[:6]) == "GIF89a"):
+		return GIF, true
+	case len(data) >= 12 && string(data[:4]) == "RIFF" && string(data[8:12]) == "WEBP":
+		size := int64(binary.LittleEndian.Uint32(data[4:8])) + 8
+		return WebP, size >= 12 && size <= totalSize
+	case len(data) >= 12 && string(data[4:8]) == "ftyp":
+		switch string(data[8:12]) {
+		case "avif", "avis":
+			return AVIF, true
+		case "heic", "heix":
+			return HEIC, true
+		case "mif1":
+			return HEIF, true
+		}
+	}
+	return "", false
+}
+
 // Find returns every plausible signature in data. It does not infer full image bounds.
 func Find(data []byte) []Match {
 	var out []Match

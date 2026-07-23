@@ -43,6 +43,10 @@ func runExtract(args []string, stdout, stderr io.Writer) int {
 		flags.Usage()
 		return ExitUsage
 	}
+	if maxDecoded <= 0 {
+		fmt.Fprintln(stderr, "invalid --max-decoded-size: must be greater than zero")
+		return ExitUsage
+	}
 	if (input == "" && len(paths) != 1) || (input != "" && len(paths) != 0) {
 		fmt.Fprintln(stderr, "extract requires either one cache-entry path or --input FILE")
 		flags.Usage()

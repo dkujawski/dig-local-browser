@@ -112,6 +112,19 @@ func TestExtractRequiresOneInputModeAndOutput(t *testing.T) {
 	}
 }
 
+func TestExtractRejectsZeroDecodedSizeLimit(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	exit := Run(
+		context.Background(),
+		[]string{"extract", "--output", t.TempDir(), "--max-decoded-size", "0", "entry"},
+		&stdout,
+		&stderr,
+	)
+	if exit != ExitUsage || !strings.Contains(stderr.String(), "must be greater than zero") {
+		t.Fatalf("exit=%d stderr=%q", exit, stderr.String())
+	}
+}
+
 func writeExtractEntry(t *testing.T, body []byte, encoding string) string {
 	t.Helper()
 	key := "https://i.redd.it/cli.png"

@@ -97,6 +97,41 @@ func TestExtractDeduplicatesDecodedImages(t *testing.T) {
 	}
 }
 
+func TestExtractDetectsWebPLargerThanSniffBuffer(t *testing.T) {
+	webp := make([]byte, 128)
+	copy(webp[0:4], "RIFF")
+	binary.LittleEndian.PutUint32(webp[4:8], uint32(len(webp)-8))
+	copy(webp[8:12], "WEBP")
+
+	result, err := Extract(
+		writeCombinedEntry(t, webp, "image/webp", ""),
+		Options{OutputDir: t.TempDir(), MaxDecodedSize: 1 << 20},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.ImageType != "webp" {
+		t.Fatalf("result = %+v", result)
+	}
+}
+
+func TestExtractRefusesMismatchedDigestNamedArtifact(t *testing.T) {
+	output := t.TempDir()
+	target := filepath.Join(output, digest(tinyPNG)+".png")
+	if err := os.WriteFile(target, []byte("different content"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := Extract(
+		writeCombinedEntry(t, tinyPNG, "image/png", ""),
+		Options{OutputDir: output, MaxDecodedSize: 1 << 20},
+	)
+	if err == nil || !strings.Contains(err.Error(), "refuse to replace") {
+		t.Fatalf("error = %v; want no-clobber error", err)
+	}
+	assertFile(t, target, []byte("different content"), 0o600)
+}
+
 func TestExtractRejectsUnsafePayloads(t *testing.T) {
 	tests := []struct {
 		name       string

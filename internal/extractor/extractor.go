@@ -147,10 +147,15 @@ func copyRaw(outputDir string, source io.ReaderAt, stream simplecache.Stream) (s
 	path := temp.Name()
 	hash := sha256.New()
 	_, copyErr := io.Copy(io.MultiWriter(temp, hash), io.NewSectionReader(source, stream.Offset, stream.Length))
+	syncErr := temp.Sync()
 	closeErr := temp.Close()
 	if copyErr != nil {
 		os.Remove(path)
 		return "", "", fmt.Errorf("copy raw response body: %w", copyErr)
+	}
+	if syncErr != nil {
+		os.Remove(path)
+		return "", "", fmt.Errorf("sync raw staging file: %w", syncErr)
 	}
 	if closeErr != nil {
 		os.Remove(path)
@@ -198,10 +203,15 @@ func decodeRaw(rawPath, outputDir string, encodings []string, limit int64) (stri
 	path := temp.Name()
 	hash := sha256.New()
 	written, copyErr := io.Copy(io.MultiWriter(temp, hash), io.LimitReader(reader, limit+1))
+	syncErr := temp.Sync()
 	closeErr := temp.Close()
 	if copyErr != nil {
 		os.Remove(path)
 		return "", "", fmt.Errorf("decode response body: %w", copyErr)
+	}
+	if syncErr != nil {
+		os.Remove(path)
+		return "", "", fmt.Errorf("sync decoded staging file: %w", syncErr)
 	}
 	if closeErr != nil {
 		os.Remove(path)
@@ -259,31 +269,33 @@ func detectImage(path string) (signatures.Type, error) {
 	if err != nil && !errors.Is(err, io.EOF) {
 		return "", fmt.Errorf("read decoded image header: %w", err)
 	}
-	for _, match := range signatures.Find(header[:n]) {
-		if match.Offset == 0 {
-			return match.Type, nil
-		}
+	info, err := file.Stat()
+	if err != nil {
+		return "", fmt.Errorf("stat decoded staging file: %w", err)
+	}
+	if imageType, ok := signatures.Detect(header[:n], info.Size()); ok {
+		return imageType, nil
 	}
 	return "", fmt.Errorf("%w; verify the cache entry and Content-Encoding metadata", ErrNotImage)
 }
 
 func installTemp(tempPath, targetPath, expectedHash string) (bool, error) {
-	if _, err := os.Stat(targetPath); err == nil {
-		actualHash, hashErr := hashFile(targetPath)
-		if hashErr != nil {
-			return false, hashErr
+	if err := os.Link(tempPath, targetPath); err == nil {
+		if err := os.Remove(tempPath); err != nil {
+			return false, fmt.Errorf("remove installed artifact staging link %q: %w", tempPath, err)
 		}
-		if actualHash != expectedHash {
-			return false, fmt.Errorf("refuse to replace existing artifact %q: content does not match its digest name", targetPath)
-		}
-		return true, nil
-	} else if !errors.Is(err, os.ErrNotExist) {
-		return false, fmt.Errorf("inspect destination artifact %q: %w", targetPath, err)
+		return false, nil
+	} else if !errors.Is(err, os.ErrExist) {
+		return false, fmt.Errorf("install artifact %q without replacing existing data: %w", targetPath, err)
 	}
-	if err := os.Rename(tempPath, targetPath); err != nil {
-		return false, fmt.Errorf("install artifact %q: %w", targetPath, err)
+	actualHash, err := hashFile(targetPath)
+	if err != nil {
+		return false, err
 	}
-	return false, nil
+	if actualHash != expectedHash {
+		return false, fmt.Errorf("refuse to replace existing artifact %q: content does not match its digest name", targetPath)
+	}
+	return true, nil
 }
 
 func hashFile(path string) (string, error) {

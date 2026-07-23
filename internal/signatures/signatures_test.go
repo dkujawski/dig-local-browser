@@ -22,3 +22,10 @@ func TestRejectsInvalidWebP(t *testing.T) {
 		t.Fatalf("Find() = %v; want no signatures", got)
 	}
 }
+
+func TestDetectWebPFromBoundedHeader(t *testing.T) {
+	header := []byte("RIFF\x78\x00\x00\x00WEBP")
+	if typ, ok := Detect(header, 128); !ok || typ != WebP {
+		t.Fatalf("Detect() = %q, %t; want webp", typ, ok)
+	}
+}

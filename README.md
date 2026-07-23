@@ -33,7 +33,9 @@ Quit Chrome first, or scan a copied dataset for consistent results.
 Run `chromecarve scan --help` for worker, byte-limit, hidden-file, symlink,
 exclusion, and diagnostic options. Time bounds are confidence signals, not hard
 filters. Logs go to stderr and machine-readable records go only to the output
-file.
+file. Scans report when they start, emit progress every five seconds, and print
+a completion summary. Use `--progress-interval DURATION` to change the update
+frequency or `--progress-interval 0` to disable periodic updates.
 
 ## Limitations
 

@@ -27,14 +27,16 @@ import (
 const defaultMaxContentScan int64 = 1024 * 1024
 
 type Config struct {
-	Roots          []string
-	After          *time.Time
-	Before         *time.Time
-	Workers        int
-	MaxContentScan int64
-	IncludeHidden  bool
-	FollowSymlinks bool
-	Exclude        []string
+	Roots            []string
+	After            *time.Time
+	Before           *time.Time
+	Workers          int
+	MaxContentScan   int64
+	IncludeHidden    bool
+	FollowSymlinks   bool
+	Exclude          []string
+	ProgressInterval time.Duration
+	Progress         func(Progress)
 }
 
 type Stats struct {
@@ -42,6 +44,11 @@ type Stats struct {
 	Candidates       int64
 	PermissionErrors int64
 	Errors           int64
+}
+
+type Progress struct {
+	Stats
+	Elapsed time.Duration
 }
 
 type Logger func(level, message string)
@@ -70,6 +77,9 @@ func (c *Config) defaults() error {
 	if c.After != nil && c.Before != nil && c.After.After(*c.Before) {
 		return errors.New("--after must not be later than --before")
 	}
+	if c.Progress != nil && c.ProgressInterval <= 0 {
+		return errors.New("progress interval must be greater than zero")
+	}
 	return nil
 }
 
@@ -79,6 +89,8 @@ func Scan(parent context.Context, cfg Config, output io.Writer, log Logger) (Sta
 	if err := cfg.defaults(); err != nil {
 		return Stats{}, err
 	}
+	startedAt := time.Now()
+	lastProgress := startedAt
 	ctx, cancel := context.WithCancel(parent)
 	defer cancel()
 	paths := make(chan string, cfg.Workers*2)
@@ -127,6 +139,7 @@ func Scan(parent context.Context, cfg Config, output io.Writer, log Logger) (Sta
 			}
 		}
 		if result.candidate == nil {
+			reportProgress(cfg, startedAt, &lastProgress, scanned.Load(), candidates, permissionErrors.Load(), scanErrors.Load())
 			continue
 		}
 		if err := writer.Write(*result.candidate); err != nil {
@@ -135,6 +148,7 @@ func Scan(parent context.Context, cfg Config, output io.Writer, log Logger) (Sta
 			continue
 		}
 		candidates++
+		reportProgress(cfg, startedAt, &lastProgress, scanned.Load(), candidates, permissionErrors.Load(), scanErrors.Load())
 	}
 	walkErr := <-walkDone
 	stats := Stats{Scanned: scanned.Load(), Candidates: candidates, PermissionErrors: permissionErrors.Load(), Errors: scanErrors.Load()}
@@ -148,6 +162,26 @@ func Scan(parent context.Context, cfg Config, output io.Writer, log Logger) (Sta
 		return stats, err
 	}
 	return stats, nil
+}
+
+func reportProgress(cfg Config, startedAt time.Time, lastProgress *time.Time, scanned, candidates, permissionErrors, scanErrors int64) {
+	if cfg.Progress == nil {
+		return
+	}
+	now := time.Now()
+	if now.Sub(*lastProgress) < cfg.ProgressInterval {
+		return
+	}
+	*lastProgress = now
+	cfg.Progress(Progress{
+		Stats: Stats{
+			Scanned:          scanned,
+			Candidates:       candidates,
+			PermissionErrors: permissionErrors,
+			Errors:           scanErrors,
+		},
+		Elapsed: now.Sub(startedAt),
+	})
 }
 
 func walk(ctx context.Context, cfg Config, paths chan<- string, permissionErrors, scanErrors *atomic.Int64, log Logger) error {

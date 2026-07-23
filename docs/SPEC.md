@@ -15,6 +15,12 @@ propagates cancellation. Modification bounds affect ranking rather than exclude
 files. JSONL output is separate from stderr diagnostics and is created mode
 `0600`.
 
+The command writes scan lifecycle feedback to stderr: an immediate start
+message, progress snapshots at a configurable interval, and a completion
+summary. Progress snapshots report elapsed time, files scanned, candidates,
+permission errors, and other errors. Periodic feedback defaults to every five
+seconds and can be disabled without affecting the final summary.
+
 The scoring policy is centralized in `internal/scoring` and follows the weights
 in the project brief. A record is a candidate when its final score is positive.
 

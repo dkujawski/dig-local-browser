@@ -40,7 +40,10 @@ MiB per stream and records a warning when skipped. HTTP metadata allocation is
 capped at 16 MiB and cache keys at 1 MiB.
 
 `chromecarve inspect PATH` presents parsed fields, stream boundaries, hashes,
-headers, and warnings. Filename-aware parsing enforces `_0` and `_1` layouts;
+headers, and warnings. `chromecarve inspect --input FILE` reads candidate paths
+from scan JSONL in file order. Batch inspection skips malformed records, keeps
+processing later records, and reports partial success if any record cannot be
+decoded or inspected. Filename-aware parsing enforces `_0` and `_1` layouts;
 the reader-only API uses conservative layout auto-detection.
 
 ## Deferred milestones

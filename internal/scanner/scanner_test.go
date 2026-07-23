@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/dkujawski/dig-local-browser/internal/simplecache"
 )
@@ -79,6 +80,49 @@ func TestScanFollowsDirectorySymlinkWhenEnabled(t *testing.T) {
 	}
 }
 
+func TestScanReportsProgressWhileRunning(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "Cache", "Cache_Data", "abcdef_0")
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte("https://i.redd.it/image.jpg"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	progress := make(chan Progress, 1)
+	stats, err := Scan(
+		context.Background(),
+		Config{
+			Roots:            []string{root},
+			Workers:          1,
+			MaxContentScan:   1024,
+			IncludeHidden:    true,
+			ProgressInterval: time.Nanosecond,
+			Progress: func(update Progress) {
+				select {
+				case progress <- update:
+				default:
+				}
+			},
+		},
+		&bytes.Buffer{},
+		nil,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	select {
+	case update := <-progress:
+		if update.Scanned < 1 {
+			t.Fatalf("progress scanned=%d; want at least 1", update.Scanned)
+		}
+		if update.Elapsed <= 0 {
+			t.Fatalf("progress elapsed=%v; want positive duration", update.Elapsed)
+		}
+	default:
+		t.Fatalf("Scan() emitted no progress update; final stats=%+v", stats)
 func TestScanScoresParsedCacheURL(t *testing.T) {
 	root := t.TempDir()
 	path := filepath.Join(root, "Cache_Data", "0123456789abcdef_0")

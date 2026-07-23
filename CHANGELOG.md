@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add configurable status and progress feedback for long-running scans.
 - Add safe Chromium Simple Cache version-5 parsing, HTTP response metadata
   decoding, integrity checks, body stream boundaries, and `chromecarve inspect`.
 - Score scanner candidates when a bounded cache key contains a valid URL.

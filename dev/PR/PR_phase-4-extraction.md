@@ -13,6 +13,11 @@
 - `go test ./internal/cli`
 - `go test ./internal/signatures ./internal/extractor ./internal/cli`
 - `make validate`
+- `make test-race`
+- `go test ./internal/simplecache -run='^$' -fuzz=FuzzSimpleCacheParser -fuzztime=2s`
+- `make build`
+- Cross-compile `./cmd/chromecarve` for Darwin arm64, Linux amd64, and Windows
+  amd64.
 
 ## Safety and compatibility
 

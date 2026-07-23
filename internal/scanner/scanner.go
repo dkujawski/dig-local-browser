@@ -282,9 +282,20 @@ func inspect(path string, cfg Config) (*manifest.Candidate, error) {
 	}
 	pathSignals := discovery.ClassifyPath(path)
 	contentSignals := reddit.FindSignals(data)
+	validCacheKey := false
+	var cacheParseError error
+	if simple {
+		parsed, parseErr := simplecache.ParseHeaderAndKey(file, info.Size())
+		if parseErr != nil {
+			cacheParseError = parseErr
+		} else if parsed.URL != "" {
+			validCacheKey = true
+			contentSignals.Matched = append(contentSignals.Matched, parsed.URL)
+		}
+	}
 	imageSignatures := signatures.Find(data)
 	inWindow := (cfg.After != nil || cfg.Before != nil) && (cfg.After == nil || !info.ModTime().Before(*cfg.After)) && (cfg.Before == nil || !info.ModTime().After(*cfg.Before))
-	score := scoring.Evaluate(scoring.Features{SimpleCache: simple, CacheStructure: pathSignals.CacheStructure, RedditURL: contentSignals.Reddit, ImageContentType: contentSignals.ImageContentType, ImageSignature: len(imageSignatures) > 0, ChromePath: pathSignals.ChromePath, ServiceWorker: pathSignals.ServiceWorker, InTimeWindow: inWindow, EntryFilename: pathSignals.EntryFilename, Unrelated: pathSignals.Unrelated})
+	score := scoring.Evaluate(scoring.Features{SimpleCache: simple, CacheStructure: pathSignals.CacheStructure, RedditURL: contentSignals.Reddit, ImageContentType: contentSignals.ImageContentType, ValidCacheKey: validCacheKey, ImageSignature: len(imageSignatures) > 0, ChromePath: pathSignals.ChromePath, ServiceWorker: pathSignals.ServiceWorker, InTimeWindow: inWindow, EntryFilename: pathSignals.EntryFilename, Unrelated: pathSignals.Unrelated})
 	if score.Confidence <= 0 {
 		return nil, detectErr
 	}
@@ -292,6 +303,9 @@ func inspect(path string, cfg Config) (*manifest.Candidate, error) {
 	candidate := &manifest.Candidate{Path: path, Size: info.Size(), ModifiedAt: info.ModTime(), CreatedAt: created, Device: device, Inode: inode, SimpleCache: simple, CacheStructure: pathSignals.CacheStructure, ImageSignatures: imageSignatures, MatchedStrings: contentSignals.Matched, Confidence: score.Confidence, Signals: score.Signals, Errors: []string{}}
 	if detectErr != nil {
 		candidate.Errors = append(candidate.Errors, detectErr.Error())
+	}
+	if cacheParseError != nil {
+		candidate.Errors = append(candidate.Errors, cacheParseError.Error())
 	}
 	return candidate, detectErr
 }

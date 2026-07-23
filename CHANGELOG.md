@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Add safe Chromium Simple Cache version-5 parsing, HTTP response metadata
+  decoding, integrity checks, body stream boundaries, and `chromecarve inspect`.
+- Score scanner candidates when a bounded cache key contains a valid URL.
+- Return a successful exit status for command-specific `--help` output.
 - Fix release artifact attachment when the upload job runs without a repository checkout.
 - Add the initial `chromecarve scan` command with bounded concurrent discovery,
   explainable candidate scoring, and privacy-conscious JSONL output.

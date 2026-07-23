@@ -17,10 +17,11 @@ import (
 )
 
 const (
-	ExitSuccess = 0
-	ExitPartial = 1
-	ExitUsage   = 2
-	ExitFatal   = 3
+	ExitSuccess     = 0
+	ExitPartial     = 1
+	ExitUsage       = 2
+	ExitFatal       = 3
+	ExitUnsupported = 4
 )
 
 type stringsFlag []string
@@ -57,10 +58,12 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	switch args[0] {
 	case "scan":
 		return runScan(ctx, args[1:], stderr)
+	case "inspect":
+		return runInspect(args[1:], stdout, stderr)
 	case "help", "-h", "--help":
 		usage(stdout)
 		return ExitSuccess
-	case "extract", "inspect", "carve", "report", "snapshots":
+	case "extract", "carve", "report", "snapshots":
 		fmt.Fprintf(stderr, "chromecarve %s is not implemented in this milestone; run 'chromecarve scan --help' or see docs/SPEC.md\n", args[0])
 		return ExitUsage
 	default:
@@ -93,6 +96,9 @@ func runScan(ctx context.Context, args []string, stderr io.Writer) int {
 		flags.PrintDefaults()
 	}
 	if err := flags.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return ExitSuccess
+		}
 		return ExitUsage
 	}
 	if len(roots) == 0 || output == "" {
@@ -161,5 +167,5 @@ func chromeRunning() bool {
 
 func usage(w io.Writer) {
 	fmt.Fprintln(w, "Usage: chromecarve <command> [options]")
-	fmt.Fprintln(w, "Commands: scan (available); extract, inspect, carve, report, snapshots (planned)")
+	fmt.Fprintln(w, "Commands: scan, inspect (available); extract, carve, report, snapshots (planned)")
 }

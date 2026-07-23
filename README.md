@@ -3,7 +3,7 @@
 `chromecarve` is a forensic-style, read-only CLI that searches local files for
 recoverable Chromium cache entries associated with images and Reddit resources.
 Filesystem discovery, candidate inventory, structured cache parsing, and
-inspection are available; extraction is the next milestone.
+validated image extraction are available.
 
 ## Build and validate
 
@@ -56,6 +56,32 @@ status, and non-fatal parsing warnings. JSONL batch inspection continues after
 malformed records or candidate-specific errors and returns a partial-success
 status when any record could not be inspected. Source files remain read-only.
 
+## Extract images
+
+Extract one inspected cache entry:
+
+```bash
+./build/chromecarve extract \
+  --output recovered \
+  "/path/to/Cache/Cache_Data/0123456789abcdef_0"
+```
+
+Or process every candidate path from scan JSONL:
+
+```bash
+./build/chromecarve extract \
+  --input findings.jsonl \
+  --output recovered \
+  > extraction-results.jsonl
+```
+
+The command supports identity, gzip, deflate, Brotli, and stacked content
+encodings. It retains encoded raw bodies, validates decoded image signatures,
+names artifacts by SHA-256, and deduplicates identical images. Decoded images
+are limited to 256 MiB by default; use `--max-decoded-size SIZE` to adjust the
+limit. Artifacts are private mode `0600`, source cache files remain read-only,
+JSONL results go to stdout, and diagnostics go to stderr.
+
 ## Limitations
 
 Recovery can fail when a response was `no-store`, existed only in memory, was
@@ -63,6 +89,7 @@ evicted or overwritten, uses an unsupported cache version, or is truncated.
 Images held only in process blobs may not exist on disk. macOS Full Disk Access
 restrictions can also hide relevant data. Entry version 5 dense files are
 supported; sparse entries and other versions are reported but not parsed.
+Zstandard and other unlisted content encodings are reported but not decoded.
 
 ## Privacy and safety
 

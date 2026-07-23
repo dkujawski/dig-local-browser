@@ -60,6 +60,13 @@ func ParseFile(path string) (*Entry, error) {
 	if err != nil {
 		return nil, fmt.Errorf("stat cache entry %q: %w", path, err)
 	}
+	entry, parseErr := ParseFileReader(path, file, info.Size())
+	return entry, parseErr
+}
+
+// ParseFileReader parses an already-open entry using path's Chromium filename
+// suffix to enforce its layout. The caller retains ownership of r.
+func ParseFileReader(path string, r io.ReaderAt, size int64) (*Entry, error) {
 	mode := layoutAuto
 	switch strings.ToLower(filepath.Ext(path)) {
 	case "":
@@ -70,7 +77,7 @@ func ParseFile(path string) (*Entry, error) {
 			mode = layoutStream2
 		}
 	}
-	entry, parseErr := parseWithLayout(file, info.Size(), mode)
+	entry, parseErr := parseWithLayout(r, size, mode)
 	if entry != nil {
 		entry.Path = path
 	}

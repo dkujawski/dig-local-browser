@@ -5,7 +5,7 @@
 3. Scan likely roots with a narrow time window as a ranking hint.
 4. Review the JSONL candidate paths and signals.
 5. Inspect high-confidence entries before extraction.
-6. Use the structured extraction command after Phase 4 is available.
+6. Extract validated images into a private output directory.
 
 ```bash
 chromecarve scan \
@@ -16,7 +16,18 @@ chromecarve scan \
   --output findings.jsonl
 
 chromecarve inspect --input findings.jsonl
+
+mkdir -m 700 recovered
+chromecarve extract \
+  --input findings.jsonl \
+  --output recovered \
+  > extraction-results.jsonl
 ```
+
+Extraction results contain source paths, URLs when available, raw and decoded
+SHA-256 values, image types, artifact paths, and deduplication status. Encoded
+responses preserve both the original `.raw` body and the decoded image. Protect
+the result JSONL and recovered files as sensitive browser data.
 
 Full Disk Access restrictions may prevent inspection of relevant directories.
 The scanner reports and continues past those paths. For APFS/Time Machine data,

@@ -46,9 +46,30 @@ processing later records, and reports partial success if any record cannot be
 decoded or inspected. Filename-aware parsing enforces `_0` and `_1` layouts;
 the reader-only API uses conservative layout auto-detection.
 
+## Phase 4: image extraction
+
+`chromecarve extract --output DIR PATH` extracts the response body from one
+parsed combined entry. `chromecarve extract --input FILE --output DIR` processes
+candidate paths from scan JSONL in file order, skips malformed or failed
+records, and reports partial success when needed.
+
+The extractor hashes the raw body with SHA-256, reverses identity, gzip,
+deflate, Brotli, and stacked HTTP content encodings, and hashes the decoded
+bytes independently. Decoded output defaults to a 256 MiB limit that callers
+can change with `--max-decoded-size`. Unsupported encodings, decode failures,
+and payloads beyond the limit produce actionable errors without leaving staging
+files behind.
+
+Decoded bytes must begin with a recognized JPEG, PNG, GIF, WebP, AVIF, HEIC, or
+HEIF signature. MIME metadata remains advisory. Digest-derived artifact names
+avoid unsafe cache-key or URL filenames and deduplicate identical decoded
+images. Encoded bodies also retain a `.raw` artifact; identity bodies use the
+image artifact as both raw and decoded output. Files are mode `0600`, synced,
+and installed without replacing existing content. Extraction results are
+written as JSONL to stdout, separately from stderr diagnostics.
+
 ## Deferred milestones
 
-- Phase 4: raw/decoded image extraction, encoding support, hashing, and deduplication.
 - Phase 5: Markdown reports.
 - Phase 6: container-aware fallback carving.
 - Phase 7: fuzzing, real copied-cache validation, and format hardening.

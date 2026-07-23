@@ -33,3 +33,10 @@ not needed to locate or classify the body.
 Sparse `_s` entries use a different version/layout and remain unsupported.
 Entries with unsupported versions return their fixed header as partial evidence
 alongside `ErrUnsupportedVersion`.
+
+Phase 4 extracts stream 1 only from combined `_0` entries. HTTP
+`Content-Encoding` values are applied in the order listed by the server and
+therefore decoded in reverse order. The supported values are identity, gzip
+(including `x-gzip`), zlib-wrapped deflate, and Brotli. Unsupported encodings
+are retained only in cache sources; no partial extraction artifact is
+installed.

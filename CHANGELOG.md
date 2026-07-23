@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add bounded raw and decoded image extraction with gzip, deflate, Brotli,
+  signature validation, SHA-256 artifact naming, and content deduplication.
 - Allow `chromecarve inspect` to inspect candidate paths directly from scan
   JSONL output files.
 - Add configurable status and progress feedback for long-running scans.

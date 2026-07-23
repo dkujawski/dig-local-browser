@@ -123,6 +123,9 @@ func TestScanReportsProgressWhileRunning(t *testing.T) {
 		}
 	default:
 		t.Fatalf("Scan() emitted no progress update; final stats=%+v", stats)
+	}
+}
+
 func TestScanScoresParsedCacheURL(t *testing.T) {
 	root := t.TempDir()
 	path := filepath.Join(root, "Cache_Data", "0123456789abcdef_0")
